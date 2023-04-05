@@ -1,0 +1,156 @@
+select * from tiktokdata;
+
+-- Looking at where creators are located and the number of creators per state. 
+
+--Create View LocationDemographics as
+select location, count(location) as [No. of Creators]
+from tiktokdata
+Group by location
+order by [No. of Creators] desc;
+
+-- Looking at what percentage of creators are male vs. female
+
+select gender, count(gender) as Total
+from tiktokdata
+group by gender
+Order by Total;
+
+--Create View GenderDemographics as
+with genderpercentage as
+(
+	select gender, count(gender) as Total
+	from tiktokdata
+	group by gender
+)
+select gender, Total, (cast(Total as float)/500)*100 as Percentage
+from genderpercentage
+Group by gender, Total
+Order by Percentage DESC;
+
+-- Looking at which gender gets the most engagement on average
+
+select gender, 
+AVG(followers) as avgFollowers, AVG(timesliked) as avgTimesLiked
+from tiktokdata
+group by gender;
+
+--Create View AvgEngagementPerGender as
+with engagement as
+(
+	select gender, 
+	AVG(followers) as avgFollowers, AVG(timesliked) as avgTimesLiked
+	from tiktokdata
+	group by gender
+)
+select gender, avgFollowers, avgTimesLiked, (cast(avgFollowers as float)/cast(avgTimesLiked as float)) as avgEngagement
+from engagement
+order by avgEngagement DESC;
+
+-- Looking at what percent of creators are in what type of niche
+
+select distinct niche, count(niche) as [Creators per Niche]
+from tiktokdata
+group by niche
+order by [Creators per Niche] desc;
+
+--Create View nichePercentage as
+with nichePercentage as
+(
+	select distinct niche, count(niche) as [Creators per Niche]
+	from tiktokdata
+	group by niche
+)
+select niche, [Creators per Niche], (cast([Creators per Niche] as float)/500)*100 as nicheUserPercentage
+from nichePercentage
+group by niche, [Creators per Niche]
+order by nicheUserPercentage desc;
+
+-- Looking at what percent of creators speak what type language
+
+select distinct language, count(language) as [Creators per language]
+from tiktokdata
+group by language
+order by [Creators per language] desc;
+
+--Create View LanguageSpokenPercentage as
+with languagePercentage as
+(
+	select distinct language, count(language) as [Creators per language]
+	from tiktokdata
+	group by language
+)
+select language, [Creators per language], (cast([Creators per language] as float)/500)*100 as languageSpokenPercentage
+from languagePercentage
+group by language, [Creators per language]
+order by languageSpokenPercentage desc;
+
+-- Looking at the engagement percentage per niche
+
+select distinct niche, Sum(cast(followers as float)) as sumFollowers, Sum(cast(timesliked as float)) as sumTimedLiked
+from tiktokdata
+group by niche;
+
+--Create view EngagementPerNiche as
+with engagementPerNiche as
+(
+	select distinct niche, Sum(cast(followers as float)) as sumFollowers, Sum(cast(timesliked as float)) as sumTimedLiked
+	from tiktokdata
+	group by niche
+)
+select niche, (sumTimedLiked/sumFollowers)*100 as nicheEngagement
+from engagementPerNiche
+order by nicheEngagement desc;
+
+-- Looking at the engagement percentage per language
+
+select distinct language, Sum(cast(followers as float)) as sumFollowers, Sum(cast(timesliked as float)) as sumTimedLiked
+from tiktokdata
+group by language;
+
+--Create view EngagementPerlanguage as
+with engagementPerlanguage as
+(
+	select distinct language, Sum(cast(followers as float)) as sumFollowers, Sum(cast(timesliked as float)) as sumTimedLiked
+	from tiktokdata
+	group by language
+)
+select language, (sumTimedLiked/sumFollowers)*100 as languageEngagement
+from engagementPerlanguage
+order by languageEngagement desc;
+
+
+-- Looking at what percentage of creators speak what language per location
+
+select location, language, count(language) over (partition by location) as languagePerLocation
+from tiktokdata
+group by location, language
+order by location;
+
+--Create View LanguagePercentagePerLocation as
+with languagePercentage as
+(
+	select location, language, count(language) over (partition by location) as languagePerLocation
+	from tiktokdata
+	group by location, language
+)
+select location, language, languagePerLocation, languagePerLocation/(sum(cast(languagePerLocation as float)) over (partition by location))*100 as percentagePerLocation
+from languagePercentage
+group by location, language, languagePerLocation;
+
+-- Looking at what percentage of creators speak what niche per location
+
+select location, niche, count(niche) over (partition by location) as nichePerLocation
+from tiktokdata
+group by location, niche
+order by location;
+
+--Create View nichePercentagePerLocation as
+with nichePercentage as
+(
+	select location, niche, count(niche) over (partition by location) as nichePerLocation
+	from tiktokdata
+	group by location, niche
+)
+select location, niche, nichePerLocation, nichePerLocation/(sum(cast(nichePerLocation as float)) over (partition by location))*100 as percentagePerLocation
+from nichePercentage
+group by location, niche, nichePerLocation;
